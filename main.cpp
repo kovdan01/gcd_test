@@ -1,12 +1,13 @@
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 std::uint64_t gcd(std::uint64_t a, std::uint64_t b)
 {
@@ -14,7 +15,7 @@ std::uint64_t gcd(std::uint64_t a, std::uint64_t b)
         std::swap(a, b);
     while (a)
     {
-        b %= a; //NOLINT clang-analyzer-core.DivideZero
+        b %= a; 
         std::swap(a, b);
     }
     return b;
@@ -151,34 +152,40 @@ std::uint64_t gcd6 (std::uint64_t a, std::uint64_t b)
 //Returns 0 in case of  success
 int gen_data(const std::string& filename, std::uint64_t pairs_count, std::uint64_t max_element = std::numeric_limits<std::uint64_t>::max())
 {
-    std::ofstream file(filename);
-    if (!file.is_open())
-        return 1;
-    std::mt19937 prng (std::random_device{}());
-    std::uniform_int_distribution<std::uint64_t> dist(1, max_element);
-    int i;
-    for (i = 0; i < pairs_count; ++i)
-        file << dist(prng) << ' ' << dist(prng) << '\n';
-    file.close();
+    {
+        std::ofstream file(filename);
+        if (!file.is_open())
+            return 1;
+        std::mt19937 prng (std::random_device{}());
+        std::uniform_int_distribution<std::uint64_t> dist(1, max_element);
+        for (int i = 0; i < pairs_count; ++i)
+            file << dist(prng) << ' ' << dist(prng) << '\n';
+    }
     return 0;
 }
 
 //Returns number of milliseconds in case of success, -1 otherwise
-std::int64_t test_algo(const std::string& input_filename, const std::function<std::uint64_t (std::uint64_t, std::uint64_t)>& func)
+std::int64_t test_algo(const std::string& input_filename, std::uint64_t func(std::uint64_t, std::uint64_t))
 {
-    std::ifstream file (input_filename);
-    if (!file.is_open())
-        return -1;
     using std::chrono::steady_clock;
     steady_clock::time_point begin, end;
-    begin = steady_clock::now();
-    std::uint64_t a, b;
-    while (file >> a >> b)
     {
-        func(a, b);
+        std::ifstream file (input_filename);
+        if (!file.is_open())
+            return -1;
+        std::vector <std::pair<std::uint64_t, std::uint64_t> > data;
+        std::uint64_t a, b;
+        while (file >> a >> b)
+            data.emplace_back(std::make_pair(a, b));
+        while (file >> a >> b)
+        {
+            func(a, b);
+        }
+        begin = steady_clock::now();
+        for (auto &item : data)
+            func(item.first, item.second);
+        end = steady_clock::now();
     }
-    end = steady_clock::now();
-    file.close();
     return std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count();
 }
 
@@ -197,7 +204,7 @@ void help()
 
 void file_error(const std::string& filename)
 {
-    std::cout << "An error occured while opening " << filename << " file\n";
+    std::cerr << "An error occured while opening " << filename << " file\n";
 }
 
 int main(int argc, char* argv[])
@@ -205,7 +212,7 @@ int main(int argc, char* argv[])
     std::string filename;
     if (argc <= 1)
     {
-        std::cout << "Please specify correct parameters. For more information use --help option.\n";
+        std::cerr << "Please specify correct parameters. For more information use --help option.\n";
         return 1;
     }
     filename = std::string(argv[1]);
@@ -214,23 +221,29 @@ int main(int argc, char* argv[])
         help();
         return 0;
     }
-    if (argc == 3)
+    try
     {
-        char *end;
-        if (gen_data(filename, std::strtoull(argv[2], &end, 10)))
+        if (argc == 3 && gen_data(filename, std::stoull(argv[2])))
         {
             file_error(filename);
             return 1;
+        
+        }
+        if (argc > 3 && gen_data(filename, std::stoull(argv[2]), std::stoull(argv[3])))
+        {
+            file_error(filename);
+            return 1; 
         }
     }
-    else if (argc > 3)
+    catch (std::invalid_argument &e)
     {
-        char *end;
-        if (gen_data(filename, std::strtoull(argv[2], &end, 10), std::strtoull(argv[3], &end, 10)))
-        {
-            file_error(filename);
-            return 1;
-        } 
+        std::cerr << "Invalid numeric arguments.\n";
+        return 1;
+    }
+    catch (std::out_of_range &e)
+    {
+        std::cerr << "Numeric arguments out of range.\n";
+        return 1;
     }
     std::int64_t gcd_time = test_algo(filename, gcd), bin_gcd_time = test_algo(filename, bin_gcd), 
             gcd3_time = test_algo(filename, gcd3), gcd4_time = test_algo(filename, gcd4),
