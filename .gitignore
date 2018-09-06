@@ -33,6 +33,8 @@ qrc_*.cpp
 Thumbs.db
 *.res
 *.rc
+./CMakeLists.txt.user
+./.gitignore
 /.qmake.cache
 /.qmake.stash
 
