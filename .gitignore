@@ -19,6 +19,7 @@
 core
 !core/
 tags
+CMakeLists.txt.user
 .DS_Store
 .directory
 *.debug
@@ -32,7 +33,6 @@ Thumbs.db
 *.res
 *.rc
 ./CMakeLists.txt.user
-./.gitignore
 /.qmake.cache
 /.qmake.stash
 

@@ -167,8 +167,8 @@ int gen_data(const std::string& filename, std::uint64_t pairs_count, std::uint64
 //Returns number of milliseconds in case of success, -1 otherwise
 std::int64_t test_algo(const std::string& input_filename, std::uint64_t func(std::uint64_t, std::uint64_t))
 {
-    using std::chrono::steady_clock;
-    steady_clock::time_point begin, end;
+    using std::chrono::high_resolution_clock;
+    high_resolution_clock::time_point begin, end;
     {
         std::ifstream file (input_filename);
         if (!file.is_open())
@@ -181,10 +181,10 @@ std::int64_t test_algo(const std::string& input_filename, std::uint64_t func(std
         {
             func(a, b);
         }
-        begin = steady_clock::now();
+        begin = high_resolution_clock::now();
         for (auto &item : data)
             func(item.first, item.second);
-        end = steady_clock::now();
+        end = high_resolution_clock::now();
     }
     return std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count();
 }
